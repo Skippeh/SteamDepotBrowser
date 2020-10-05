@@ -37,7 +37,7 @@ namespace SteamDepotBrowser
 
             var sentryHash = GetSentryHash(File.ReadAllBytes(filePath));
 
-            var user = Globals.SteamClient.GetHandler<SteamUser>();
+            var user = Globals.SteamSession.Client.GetHandler<SteamUser>();
             user.SendMachineAuthResponse(new SteamUser.MachineAuthDetails
             {
                 JobID = data.JobID,

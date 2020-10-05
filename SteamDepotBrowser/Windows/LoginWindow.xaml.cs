@@ -8,7 +8,7 @@ namespace SteamDepotBrowser.Windows
 {
     public partial class LoginWindow : Window
     {
-        private SteamClient Client => Globals.SteamClient;
+        private SteamClient Client => Globals.SteamSession.Client;
         private LoginState State => Globals.AppState.LoginState;
 
         private bool requiresTwoFactorCode;
@@ -20,9 +20,9 @@ namespace SteamDepotBrowser.Windows
             InitializeComponent();
             DataContext = Globals.AppState;
 
-            subscribedEvents.Add(Globals.CallbackManager.Subscribe<SteamClient.ConnectedCallback>(OnSteamConnected));
-            subscribedEvents.Add(Globals.CallbackManager.Subscribe<SteamClient.DisconnectedCallback>(OnSteamDisconnected));
-            subscribedEvents.Add(Globals.CallbackManager.Subscribe<SteamUser.LoggedOnCallback>(OnSteamLoggedOn));
+            subscribedEvents.Add(Globals.SteamSession.CallbackManager.Subscribe<SteamClient.ConnectedCallback>(OnSteamConnected));
+            subscribedEvents.Add(Globals.SteamSession.CallbackManager.Subscribe<SteamClient.DisconnectedCallback>(OnSteamDisconnected));
+            subscribedEvents.Add(Globals.SteamSession.CallbackManager.Subscribe<SteamUser.LoggedOnCallback>(OnSteamLoggedOn));
 
             Closing += (sender, args) =>
             {

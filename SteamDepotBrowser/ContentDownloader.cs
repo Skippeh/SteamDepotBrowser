@@ -25,8 +25,8 @@ namespace SteamDepotBrowser
         public const ulong INVALID_MANIFEST_ID = ulong.MaxValue;
         public const string DEFAULT_BRANCH = "Public";
 
-        private static Steam3Session SteamSession => Globals.SteamSession;
-        private static CDNClientPool cdnPool;
+        private static SteamSession SteamSession => Globals.SteamSession;
+        private static CDNClientPool cdnPool = new CDNClientPool(SteamSession);
 
         private const string DEFAULT_DOWNLOAD_DIR = "depots";
         private const string CONFIG_DIR = ".DepotDownloader";
@@ -90,50 +90,44 @@ namespace SteamDepotBrowser
 
         public static ContentDownloaderConfig Config { get; set; }
 
-        internal static KeyValue GetSteam3AppSection(uint appId, EAppInfoSection section)
+        internal static async Task<KeyValue> GetSteam3AppSectionAsync(uint appId, EAppInfoSection section)
         {
-            if (SteamSession == null || SteamSession.AppInfo == null)
-            {
-                return null;
-            }
+            SteamApps.PICSProductInfoCallback.PICSProductInfo app = await SteamSession.RequestAppInfoAsync(appId).ConfigureAwait(false);
 
-            SteamApps.PICSProductInfoCallback.PICSProductInfo app;
-            if (!SteamSession.AppInfo.TryGetValue(appId, out app) || app == null)
-            {
+            if (app == null)
                 return null;
-            }
 
-            KeyValue appinfo = app.KeyValues;
-            string section_key;
+            KeyValue appInfo = app.KeyValues;
+            string sectionKey;
 
             switch (section)
             {
                 case EAppInfoSection.Common:
-                    section_key = "common";
+                    sectionKey = "common";
                     break;
                 case EAppInfoSection.Extended:
-                    section_key = "extended";
+                    sectionKey = "extended";
                     break;
                 case EAppInfoSection.Config:
-                    section_key = "config";
+                    sectionKey = "config";
                     break;
                 case EAppInfoSection.Depots:
-                    section_key = "depots";
+                    sectionKey = "depots";
                     break;
                 default:
                     throw new NotImplementedException();
             }
 
-            KeyValue sectionKv = appinfo.Children.FirstOrDefault(c => c.Name == section_key);
+            KeyValue sectionKv = appInfo.Children.FirstOrDefault(c => c.Name == sectionKey);
             return sectionKv;
         }
 
-        static uint GetSteam3AppBuildNumber(uint appId, string branch)
+        static async Task<uint> GetSteam3AppBuildNumber(uint appId, string branch)
         {
             if (appId == INVALID_APP_ID)
                 return 0;
 
-            KeyValue depots = GetSteam3AppSection(appId, EAppInfoSection.Depots);
+            KeyValue depots = await GetSteam3AppSectionAsync(appId, EAppInfoSection.Depots).ConfigureAwait(false);
             KeyValue branches = depots["branches"];
             KeyValue node = branches[branch];
 
@@ -148,114 +142,11 @@ namespace SteamDepotBrowser
             return uint.Parse(buildId.Value);
         }
 
-        static ulong GetSteam3DepotManifest(uint depotId, uint appId, string branch)
-        {
-            KeyValue depots = GetSteam3AppSection(appId, EAppInfoSection.Depots);
-            KeyValue depotChild = depots[depotId.ToString()];
-
-            if (depotChild == KeyValue.Invalid)
-                return INVALID_MANIFEST_ID;
-
-            // Shared depots can either provide manifests, or leave you relying on their parent app.
-            // It seems that with the latter, "sharedinstall" will exist (and equals 2 in the one existance I know of).
-            // Rather than relay on the unknown sharedinstall key, just look for manifests. Test cases: 111710, 346680.
-            if (depotChild["manifests"] == KeyValue.Invalid && depotChild["depotfromapp"] != KeyValue.Invalid)
-            {
-                uint otherAppId = depotChild["depotfromapp"].AsUnsignedInteger();
-                if (otherAppId == appId)
-                {
-                    // This shouldn't ever happen, but ya never know with Valve. Don't infinite loop.
-                    Console.WriteLine("App {0}, Depot {1} has depotfromapp of {2}!",
-                        appId, depotId, otherAppId);
-                    return INVALID_MANIFEST_ID;
-                }
-
-                SteamSession.RequestAppInfo(otherAppId);
-
-                return GetSteam3DepotManifest(depotId, otherAppId, branch);
-            }
-
-            var manifests = depotChild["manifests"];
-            var manifests_encrypted = depotChild["encryptedmanifests"];
-
-            if (manifests.Children.Count == 0 && manifests_encrypted.Children.Count == 0)
-                return INVALID_MANIFEST_ID;
-
-            var node = manifests[branch];
-
-            if (branch != "Public" && node == KeyValue.Invalid)
-            {
-                var node_encrypted = manifests_encrypted[branch];
-                if (node_encrypted != KeyValue.Invalid)
-                {
-                    string password = Config.BranchPassword;
-                    if (password == null)
-                    {
-                        throw new ContentDownloaderException("Specified branch required a password.");
-                    }
-
-                    var encrypted_v1 = node_encrypted["encrypted_gid"];
-                    var encrypted_v2 = node_encrypted["encrypted_gid_2"];
-
-                    if (encrypted_v1 != KeyValue.Invalid)
-                    {
-                        byte[] input = Util.DecodeHexString(encrypted_v1.Value);
-                        byte[] manifest_bytes = CryptoHelper.VerifyAndDecryptPassword(input, password);
-
-                        if (manifest_bytes == null)
-                        {
-                            Console.WriteLine("Password was invalid for branch {0}", branch);
-                            return INVALID_MANIFEST_ID;
-                        }
-
-                        return BitConverter.ToUInt64(manifest_bytes, 0);
-                    }
-                    else if (encrypted_v2 != KeyValue.Invalid)
-                    {
-                        // Submit the password to Steam now to get encryption keys
-                        SteamSession.CheckAppBetaPassword(appId, Config.BranchPassword);
-
-                        if (!SteamSession.AppBetaPasswords.ContainsKey(branch))
-                        {
-                            Console.WriteLine("Password was invalid for branch {0}", branch);
-                            return INVALID_MANIFEST_ID;
-                        }
-
-                        byte[] input = Util.DecodeHexString(encrypted_v2.Value);
-                        byte[] manifest_bytes;
-                        try
-                        {
-                            manifest_bytes = CryptoHelper.SymmetricDecryptECB(input, SteamSession.AppBetaPasswords[branch]);
-                        }
-                        catch (Exception e)
-                        {
-                            Console.WriteLine("Failed to decrypt branch {0}: {1}", branch, e.Message);
-                            return INVALID_MANIFEST_ID;
-                        }
-
-                        return BitConverter.ToUInt64(manifest_bytes, 0);
-                    }
-                    else
-                    {
-                        Console.WriteLine("Unhandled depot encryption for depotId {0}", depotId);
-                        return INVALID_MANIFEST_ID;
-                    }
-                }
-
-                return INVALID_MANIFEST_ID;
-            }
-
-            if (node.Value == null)
-                return INVALID_MANIFEST_ID;
-
-            return UInt64.Parse(node.Value);
-        }
-
-        static string GetAppOrDepotName(uint depotId, uint appId)
+        static async Task<string> GetAppOrDepotName(uint depotId, uint appId)
         {
             if (depotId == INVALID_DEPOT_ID)
             {
-                KeyValue info = GetSteam3AppSection(appId, EAppInfoSection.Common);
+                KeyValue info = await GetSteam3AppSectionAsync(appId, EAppInfoSection.Common).ConfigureAwait(false);
 
                 if (info == null)
                     return String.Empty;
@@ -264,7 +155,7 @@ namespace SteamDepotBrowser
             }
             else
             {
-                KeyValue depots = GetSteam3AppSection(appId, EAppInfoSection.Depots);
+                KeyValue depots = await GetSteam3AppSectionAsync(appId, EAppInfoSection.Depots).ConfigureAwait(false);
 
                 if (depots == null)
                     return String.Empty;
@@ -281,7 +172,7 @@ namespace SteamDepotBrowser
         public static async Task DownloadAppAsync(uint appId, uint depotId, ulong manifestId)
         {
             // Load our configuration data containing the depots currently installed
-            string configPath = ContentDownloader.Config.InstallDirectory;
+            string configPath = Config.InstallDirectory;
             if (string.IsNullOrWhiteSpace(configPath))
             {
                 configPath = DEFAULT_DOWNLOAD_DIR;
@@ -290,17 +181,14 @@ namespace SteamDepotBrowser
             Directory.CreateDirectory(Path.Combine(configPath, CONFIG_DIR));
             DepotConfigStore.LoadFromFile(Path.Combine(configPath, CONFIG_DIR, "depot.config"));
 
-            if (SteamSession != null)
-                SteamSession.RequestAppInfo(appId);
-
             var depotIDs = new List<uint>() {depotId};
-            KeyValue depots = GetSteam3AppSection(appId, EAppInfoSection.Depots);
+            KeyValue depots = await GetSteam3AppSectionAsync(appId, EAppInfoSection.Depots).ConfigureAwait(false);
 
             var infos = new List<DepotDownloadInfo>();
 
             foreach (var depot in depotIDs)
             {
-                var info = GetDepotInfo(depot, appId, manifestId, "Public");
+                var info = await GetDepotInfoAsync(depot, appId, manifestId, "Public").ConfigureAwait(false);
                 
                 if (info != null)
                 {
@@ -319,50 +207,27 @@ namespace SteamDepotBrowser
             }
         }
 
-        static DepotDownloadInfo GetDepotInfo(uint depotId, uint appId, ulong manifestId, string branch)
+        static async Task<DepotDownloadInfo> GetDepotInfoAsync(uint depotId, uint appId, ulong manifestId, string branch)
         {
-            if (SteamSession != null && appId != INVALID_APP_ID)
-                SteamSession.RequestAppInfo((uint) appId);
-
-            string contentName = GetAppOrDepotName(depotId, appId);
+            string contentName = await GetAppOrDepotName(depotId, appId).ConfigureAwait(false);
 
             // Skip requesting an app ticket
-            SteamSession.AppTickets[depotId] = null;
+            //SteamSession.AppTickets[depotId] = null;
 
-            if (manifestId == INVALID_MANIFEST_ID)
-            {
-                manifestId = GetSteam3DepotManifest(depotId, appId, branch);
-                if (manifestId == INVALID_MANIFEST_ID && branch != "public")
-                {
-                    Console.WriteLine("Warning: Depot {0} does not have branch named \"{1}\". Trying public branch.", depotId, branch);
-                    branch = "public";
-                    manifestId = GetSteam3DepotManifest(depotId, appId, branch);
-                }
-
-                if (manifestId == INVALID_MANIFEST_ID)
-                {
-                    Console.WriteLine("Depot {0} ({1}) missing public subsection or manifest section.", depotId, contentName);
-                    return null;
-                }
-            }
-
-            uint uVersion = GetSteam3AppBuildNumber(appId, branch);
+            uint uVersion = await GetSteam3AppBuildNumber(appId, branch).ConfigureAwait(false);
 
             string installDir;
             if (!CreateDirectories(depotId, uVersion, out installDir))
             {
-                Console.WriteLine("Error: Unable to create install directories!");
-                return null;
+                throw new ContentDownloaderException("Could not create install directories.");
             }
 
-            SteamSession.RequestDepotKey(depotId, appId);
-            if (!SteamSession.DepotKeys.ContainsKey(depotId))
+            byte[] depotKey = await SteamSession.RequestDepotKey(depotId, appId).ConfigureAwait(false);
+            
+            if (depotKey == null)
             {
-                Console.WriteLine("No valid depot key for {0}, unable to download.", depotId);
-                return null;
+                throw new ContentDownloaderException($"No valid depot key for {depotId}, unable to download.");
             }
-
-            byte[] depotKey = SteamSession.DepotKeys[depotId];
 
             var info = new DepotDownloadInfo(depotId, manifestId, installDir, contentName);
             info.DepotKey = depotKey;
@@ -787,7 +652,6 @@ namespace SteamDepotBrowser
     {
         public string InstallDirectory { get; set; }
         public int CellID { get; set; } // todo: use SteamUser.CellID
-        public string BranchPassword { get; set; }
         public int MaxDownloads { get; set; } = 10;
         public bool VerifyAll { get; set; }
     }

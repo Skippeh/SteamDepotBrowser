@@ -16,7 +16,7 @@ namespace SteamDepotBrowser
     {
         private const int ServerEndpointMinimumSize = 8;
 
-        private readonly Steam3Session steamSession;
+        private readonly SteamSession steamSession;
 
         public CDNClient CDNClient { get; }
 
@@ -28,7 +28,7 @@ namespace SteamDepotBrowser
         private readonly CancellationTokenSource shutdownToken;
         public CancellationTokenSource ExhaustedToken { get; set; }
 
-        public CDNClientPool(Steam3Session steamSession)
+        public CDNClientPool(SteamSession steamSession)
         {
             this.steamSession = steamSession;
             CDNClient = new CDNClient(steamSession.Client);
@@ -127,16 +127,15 @@ namespace SteamDepotBrowser
             var host = steamSession.ResolveCDNTopLevelHost(server.Host);
             var cdnKey = $"{depotId:D}:{host}";
 
-            steamSession.RequestCDNAuthToken(appId, depotId, host, cdnKey);
+            var cdnAuthToken = await steamSession.RequestCDNAuthToken(appId, depotId, host, cdnKey);
 
-            if (steamSession.CDNAuthTokens.TryGetValue(cdnKey, out var authTokenCallbackPromise))
+            if (cdnAuthToken != null)
             {
-                var result = await authTokenCallbackPromise.Task;
-                return result.Token;
+                return cdnAuthToken.Token;
             }
             else
             {
-                throw new Exception($"Failed to retrieve CDN token for server {server.Host} depot {depotId}");
+                throw new ContentDownloaderException($"Failed to retrieve CDN token for server {server.Host} depot {depotId}");
             }
         }
 

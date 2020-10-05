@@ -18,11 +18,6 @@ namespace SteamDepotBrowser
         protected override void OnStartup(StartupEventArgs e)
         {
             XamlDisplay.Init();
-            Task.Run(UpdateSteamThread);
-            
-            Globals.CallbackManager.Subscribe<SteamUser.LoginKeyCallback>(OnSteamLoginKey);
-            Globals.CallbackManager.Subscribe<SteamUser.UpdateMachineAuthCallback>(OnSteamUpdateMachineAuth);
-            Globals.CallbackManager.Subscribe<SteamApps.LicenseListCallback>(OnSteamLicenseList);
 
             if (File.Exists("lastusername"))
             {
@@ -37,46 +32,6 @@ namespace SteamDepotBrowser
         {
             isRunning = false;
             base.OnExit(e);
-        }
-
-        private async Task UpdateSteamThread()
-        {
-            while (isRunning)
-            {
-                try
-                {
-                    Globals.CallbackManager.RunCallbacks();
-                }
-                catch (Exception ex)
-                {
-                    Console.Error.WriteLine(ex);
-                }
-
-                await Task.Delay(50);
-            }
-
-            Globals.SteamClient.Disconnect();
-        }
-
-        private void OnSteamLoginKey(SteamUser.LoginKeyCallback data)
-        {
-            SteamSentryManager.WriteLoginKey(data, Globals.AppState.LoginState.Username);
-        }
-
-        private void OnSteamUpdateMachineAuth(SteamUser.UpdateMachineAuthCallback data)
-        {
-            SteamSentryManager.WriteSentryFile(data, Globals.AppState.LoginState.Username);
-        }
-
-        private void OnSteamLicenseList(SteamApps.LicenseListCallback data)
-        {
-            if (data.Result != EResult.OK)
-            {
-                throw new NotImplementedException($"OnLicenseList EResult != OK ({data.Result})");
-            }
-
-            Globals.Licenses.AddRange(data.LicenseList);
-            Globals.ReceivedLicenses = true;
         }
     }
 }

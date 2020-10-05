@@ -10,6 +10,7 @@ namespace SteamDepotBrowser
         public static AppState AppState { get; } = new AppState();
         public static List<SteamApps.LicenseListCallback.License> Licenses { get; } = new List<SteamApps.LicenseListCallback.License>();
         public static bool ReceivedLicenses { get; set; }
+        public static Steam3Session SteamSession { get; } = new Steam3Session();
 
         static Globals()
         {

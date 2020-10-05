@@ -116,16 +116,23 @@
             <Generator>MSBuild:Compile</Generator>
             <SubType>Designer</SubType>
         </ApplicationDefinition>
+        <Compile Include="AccountSettingsStore.cs" />
         <Compile Include="AppState.cs" />
+        <Compile Include="CDNClientPool.cs" />
+        <Compile Include="ContentDownloader.cs" />
         <Compile Include="Converters\InvertBooleanConverter.cs" />
         <Compile Include="Data\AppDepot.cs" />
         <Compile Include="Data\DepotManifestInfo.cs" />
         <Compile Include="Data\SteamApp.cs" />
+        <Compile Include="DepotConfigStore.cs" />
         <Compile Include="Globals.cs" />
         <Compile Include="HtmlManager.cs" />
         <Compile Include="PasswordBoxAssistant.cs" />
+        <Compile Include="ProtoManifest.cs" />
+        <Compile Include="Steam3Session.cs" />
         <Compile Include="SteamDBManager.cs" />
         <Compile Include="SteamSentryManager.cs" />
+        <Compile Include="Util.cs" />
         <Compile Include="Windows\LoginWindow.xaml.cs">
           <DependentUpon>LoginWindow.xaml</DependentUpon>
         </Compile>

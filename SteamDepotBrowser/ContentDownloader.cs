@@ -88,7 +88,7 @@ namespace SteamDepotBrowser
             return true;
         }
 
-        public static ContentDownloaderConfig Config { get; set; }
+        public static ContentDownloaderConfig Config { get; set; } = new ContentDownloaderConfig();
 
         internal static async Task<KeyValue> GetSteam3AppSectionAsync(uint appId, EAppInfoSection section)
         {
@@ -646,13 +646,5 @@ namespace SteamDepotBrowser
 
             Console.WriteLine("Total downloaded: {0} bytes ({1} bytes uncompressed) from {2} depots", TotalBytesCompressed, TotalBytesUncompressed, depots.Count);
         }
-    }
-
-    public class ContentDownloaderConfig
-    {
-        public string InstallDirectory { get; set; }
-        public int CellID { get; set; } // todo: use SteamUser.CellID
-        public int MaxDownloads { get; set; } = 10;
-        public bool VerifyAll { get; set; }
     }
 }

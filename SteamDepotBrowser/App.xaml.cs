@@ -13,8 +13,6 @@ namespace SteamDepotBrowser
     /// </summary>
     public partial class App
     {
-        private bool isRunning = true;
-        
         protected override void OnStartup(StartupEventArgs e)
         {
             XamlDisplay.Init();
@@ -30,7 +28,7 @@ namespace SteamDepotBrowser
 
         protected override void OnExit(ExitEventArgs e)
         {
-            isRunning = false;
+            Globals.SteamSession.Shutdown().Wait();
             base.OnExit(e);
         }
     }

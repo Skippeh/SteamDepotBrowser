@@ -246,7 +246,7 @@ namespace SteamDepotBrowser
 
                     steamApp.Depots.Add(new AppDepot
                     {
-                        Id = depotId,
+                        Id = (uint) depotId,
                         Name = depotInfo["name"].AsString()
                     });
                 }

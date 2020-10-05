@@ -4,7 +4,7 @@ namespace SteamDepotBrowser.Data
 {
     public class AppDepot
     {
-        public int Id { get; set; }
+        public uint Id { get; set; }
         public string Name { get; set; }
         public List<DepotManifestInfo> Manifests { get; set; } = new List<DepotManifestInfo>();
     }

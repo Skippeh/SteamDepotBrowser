@@ -12,7 +12,7 @@ namespace SteamDepotBrowser
     {
         private const string BaseUrl = "https://steamdb.info";
 
-        public static Task<List<DepotManifestInfo>> GetManifests(int depotId)
+        public static Task<List<DepotManifestInfo>> GetManifests(uint depotId)
         {
             return Task.Run(async () =>
             {
@@ -44,7 +44,7 @@ namespace SteamDepotBrowser
                     result.Add(new DepotManifestInfo
                     {
                         Date = date,
-                        ManifestId = manifestId
+                        Id = manifestId
                     });
                 }
                 

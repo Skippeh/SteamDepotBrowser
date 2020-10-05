@@ -30,7 +30,7 @@ namespace SteamDepotBrowser
 
         public CDNClientPool(SteamSession steamSession)
         {
-            this.steamSession = steamSession;
+            this.steamSession = steamSession ?? throw new ArgumentNullException(nameof(steamSession));
             CDNClient = new CDNClient(steamSession.Client);
 
             activeConnectionPool = new ConcurrentBag<CDNClient.Server>();

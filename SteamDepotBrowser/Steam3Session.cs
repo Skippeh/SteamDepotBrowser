@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Threading;
 using SteamDepotBrowser.Data;
 using SteamDepotBrowser.Windows;
@@ -78,11 +79,12 @@ namespace SteamDepotBrowser
             });
         }
 
-        public async Task<bool> LogOnWithUI(Dispatcher uiDispatcher)
+        public async Task<bool> LogOnWithUI(Window parentWindow)
         {
-            bool loggedIn = await uiDispatcher.InvokeAsync(() =>
+            bool loggedIn = await parentWindow.Dispatcher.InvokeAsync(() =>
             {
                 var loginWindow = new LoginWindow();
+                loginWindow.Owner = parentWindow;
 
                 if (loginWindow.ShowDialog() == true)
                     return true;
@@ -95,32 +97,52 @@ namespace SteamDepotBrowser
 
             while (!ReceivedLicenses)
                 await Task.Delay(50).ConfigureAwait(false);
-            
+
             return true;
         }
 
-        public async Task<SteamApps.PICSProductInfoCallback.PICSProductInfo> RequestAppInfoAsync(uint appId, bool allowCached = true)
+        public Task<SteamApps.PICSProductInfoCallback.PICSProductInfo> RequestAppInfoAsync(uint appId, bool allowCached = true)
         {
             if (allowCached && cachedApps.TryGetValue(appId, out var runningTask))
-                return await runningTask.ConfigureAwait(false);
-            
-            throw new NotImplementedException();
+                return runningTask;
+
+            return cachedApps[appId] = Task.Run(async () =>
+            {
+                var productInfo = await steamApps.PICSGetProductInfo(appId, null, false);
+
+                if (productInfo.Failed)
+                    return null;
+                
+                return productInfo.Results.First().Apps.First().Value;
+            });
         }
 
-        public async Task<byte[]> RequestDepotKey(uint depotId, uint appId, bool allowCached = true)
+        public Task<byte[]> RequestDepotKey(uint depotId, uint appId, bool allowCached = true)
         {
             if (allowCached && cachedDepotKeys.TryGetValue(depotId, out var runningTask))
-                return await runningTask.ConfigureAwait(false);
-            
-            throw new NotImplementedException();
+                return runningTask;
+
+            return cachedDepotKeys[depotId] = Task.Run<byte[]>(async () =>
+            {
+                var depotDecryptionKey = await steamApps.GetDepotDecryptionKey(depotId, appId);
+
+                if (depotDecryptionKey.Result != EResult.OK)
+                    throw new Exception($"GetDepotDecryptionKey result = {depotDecryptionKey.Result}");
+                
+                return depotDecryptionKey.DepotKey;
+            });
         }
 
-        public async Task<SteamApps.CDNAuthTokenCallback> RequestCDNAuthToken(uint appId, uint depotId, string host, string cdnKey, bool allowCached = true)
+        public Task<SteamApps.CDNAuthTokenCallback> RequestCDNAuthToken(uint appId, uint depotId, string host, string cdnKey, bool allowCached = true)
         {
             if (allowCached && cachedCdnAuthTokens.TryGetValue(cdnKey, out var runningTask))
-                return await runningTask.ConfigureAwait(false);
-            
-            throw new NotImplementedException();
+                return runningTask;
+
+            return cachedCdnAuthTokens[cdnKey] = Task.Run(async () =>
+            {
+                var cdnTokenCallback = await steamApps.GetCDNAuthToken(appId, depotId, host);
+                return cdnTokenCallback;
+            });
         }
 
         public string ResolveCDNTopLevelHost(string host)
@@ -209,6 +231,8 @@ namespace SteamDepotBrowser
                 KeyValue common = appInfo.KeyValues["common"];
                 string appName = common["name"].AsString();
                 string type = common["type"].AsString();
+
+                cachedApps.TryAdd(appInfo.ID, Task.Run(() => appInfo));
 
                 string[] validTypes =
                 {

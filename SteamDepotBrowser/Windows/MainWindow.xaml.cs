@@ -23,7 +23,7 @@ namespace SteamDepotBrowser.Windows
             {
                 Task.Run(async () =>
                 {
-                    if (!await Globals.SteamSession.LogOnWithUI(Dispatcher))
+                    if (!await Globals.SteamSession.LogOnWithUI(this))
                     {
                         Close();
                         return;
@@ -55,8 +55,6 @@ namespace SteamDepotBrowser.Windows
             if (folderDialog.ShowDialog(this) != true)
                 return;
             
-            
-
             Task.Run(() => StartDownload(folderDialog.SelectedPath));
         }
 
@@ -69,7 +67,15 @@ namespace SteamDepotBrowser.Windows
 
             ContentDownloader.Config.InstallDirectory = targetFolder;
             ContentDownloader.Config.CellID = (int) Globals.SteamSession.Client.CellID;
-            await ContentDownloader.DownloadAppAsync(Globals.AppState.SelectedApp.Id, Globals.AppState.SelectedDepot.Id, Globals.AppState.SelectedManifest.Id);
+
+            try
+            {
+                await ContentDownloader.DownloadAppAsync(Globals.AppState.SelectedApp.Id, Globals.AppState.SelectedDepot.Id, Globals.AppState.SelectedManifest.Id);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"An error occured: {ex.Message}", "Download error");
+            }
 
             Globals.AppState.Downloading = false;
             Globals.AppState.DownloadPercentageComplete = 0;

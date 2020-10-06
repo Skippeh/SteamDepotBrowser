@@ -18,6 +18,7 @@ namespace SteamDepotBrowser
         private readonly HashSet<AppDepot> loadedManifests = new HashSet<AppDepot>();
         private double downloadPercentageComplete;
         private bool downloading;
+        private string downloadCurrentFile;
 
         public LoginState LoginState { get; } = new LoginState();
         public SteamState SteamState { get; } = new SteamState();
@@ -82,6 +83,16 @@ namespace SteamDepotBrowser
             set
             {
                 downloadPercentageComplete = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public string DownloadCurrentFile
+        {
+            get => downloadCurrentFile;
+            set
+            {
+                downloadCurrentFile = value;
                 OnPropertyChanged();
             }
         }

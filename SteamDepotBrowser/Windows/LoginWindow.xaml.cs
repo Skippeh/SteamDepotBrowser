@@ -40,7 +40,7 @@ namespace SteamDepotBrowser.Windows
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            if (State.Username != "" && File.Exists(Path.Combine("sentry", $"login_{State.Username}")))
+            if (State.Username != "" && AccountSettingsStore.Instance.LoginKeys.ContainsKey(State.Username))
             {
                 State.LoggingIn = true;
                 Client.Connect();
@@ -51,12 +51,14 @@ namespace SteamDepotBrowser.Windows
         {
             if (State.Username == "" || State.Password == "")
             {
+                State.LoginErrorText = "Invalid username or password";
                 return;
             }
 
-            if (!State.RememberLogin && File.Exists("lastusername"))
+            if (!State.RememberLogin)
             {
-                File.Delete("lastusername");
+                AccountSettingsStore.Instance.LastUsername = null;
+                AccountSettingsStore.Save();
             }
             
             State.LoggingIn = true;
@@ -119,7 +121,8 @@ namespace SteamDepotBrowser.Windows
 
             if (State.RememberLogin)
             {
-                File.WriteAllText("lastusername", State.Username);
+                AccountSettingsStore.Instance.LastUsername = State.Username;
+                AccountSettingsStore.Save();
             }
 
             loggedInSuccessfully = true;

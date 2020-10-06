@@ -178,8 +178,11 @@ namespace SteamDepotBrowser
                 configPath = DEFAULT_DOWNLOAD_DIR;
             }
 
-            Directory.CreateDirectory(Path.Combine(configPath, CONFIG_DIR));
-            DepotConfigStore.LoadFromFile(Path.Combine(configPath, CONFIG_DIR, "depot.config"));
+            if (!DepotConfigStore.Loaded)
+            {
+                Directory.CreateDirectory(Path.Combine(configPath, CONFIG_DIR));
+                DepotConfigStore.LoadFromFile(Path.Combine(configPath, CONFIG_DIR, "depot.config"));
+            }
 
             var depotIDs = new List<uint>() {depotId};
             KeyValue depots = await GetSteam3AppSectionAsync(appId, EAppInfoSection.Depots).ConfigureAwait(false);
@@ -396,6 +399,16 @@ namespace SteamDepotBrowser
 
                 ulong complete_download_size = 0;
                 ulong size_downloaded = 0;
+
+                void reportProgress(string currentFilePath)
+                {
+                    Globals.UiDispatcher.Invoke(() =>
+                    {
+                        Globals.AppState.DownloadPercentageComplete = ((double) size_downloaded / complete_download_size) * 100;
+                        Globals.AppState.DownloadCurrentFile = currentFilePath;
+                    });
+                }
+                
                 string stagingDir = Path.Combine(depot.InstallDir, STAGING_DIR);
 
                 var filesAfterExclusions = newProtoManifest.Files;
@@ -533,7 +546,8 @@ namespace SteamDepotBrowser
                                 if (neededChunks.Count() == 0)
                                 {
                                     size_downloaded += file.TotalSize;
-                                    Console.WriteLine("{0,6:#00.00}% {1}", ((float) size_downloaded / (float) complete_download_size) * 100.0f, fileFinalPath);
+                                    reportProgress(fileFinalPath);
+                                    
                                     if (fs != null)
                                         fs.Dispose();
                                     return;
@@ -541,6 +555,7 @@ namespace SteamDepotBrowser
                                 else
                                 {
                                     size_downloaded += (file.TotalSize - (ulong) neededChunks.Select(x => (long) x.UncompressedLength).Sum());
+                                    reportProgress(fileFinalPath);
                                 }
                             }
 
@@ -621,11 +636,11 @@ namespace SteamDepotBrowser
                                 fs.Write(chunkData.Data, 0, chunkData.Data.Length);
 
                                 size_downloaded += chunk.UncompressedLength;
+                                reportProgress(fileFinalPath);
                             }
 
                             fs.Dispose();
-
-                            Console.WriteLine("{0,6:#00.00}% {1}", ((float) size_downloaded / (float) complete_download_size) * 100.0f, fileFinalPath);
+                            reportProgress(fileFinalPath);
                         }
                         finally
                         {
@@ -642,6 +657,7 @@ namespace SteamDepotBrowser
                 DepotConfigStore.Save();
 
                 Console.WriteLine("Depot {0} - Downloaded {1} bytes ({2} bytes uncompressed)", depot.Id, DepotBytesCompressed, DepotBytesUncompressed);
+                reportProgress(null);
             }
 
             Console.WriteLine("Total downloaded: {0} bytes ({1} bytes uncompressed) from {2} depots", TotalBytesCompressed, TotalBytesUncompressed, depots.Count);

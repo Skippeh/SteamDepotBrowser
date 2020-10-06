@@ -10,28 +10,25 @@ namespace SteamDepotBrowser
     [ProtoContract]
     class AccountSettingsStore
     {
-        [ProtoMember(1, IsRequired=false)]
-        public Dictionary<string, byte[]> SentryData { get; private set; }
+        [ProtoMember(1, IsRequired = false)]
+        public System.Collections.Concurrent.ConcurrentDictionary<string, int> ContentServerPenalty { get; }
 
         [ProtoMember(2, IsRequired = false)]
-        public System.Collections.Concurrent.ConcurrentDictionary<string, int> ContentServerPenalty { get; private set; }
+        public Dictionary<string, string> LoginKeys { get; }
 
         [ProtoMember(3, IsRequired = false)]
-        public Dictionary<string, string> LoginKeys { get; private set; }
+        public string LastUsername { get; set; }
 
-        string FileName = null;
+        string fileName;
 
         AccountSettingsStore()
         {
-            SentryData = new Dictionary<string, byte[]>();
             ContentServerPenalty = new System.Collections.Concurrent.ConcurrentDictionary<string, int>();
             LoginKeys = new Dictionary<string, string>();
+            LastUsername = "";
         }
 
-        static bool Loaded
-        {
-            get { return Instance != null; }
-        }
+        static bool Loaded => Instance != null;
 
         public static AccountSettingsStore Instance = null;
         static readonly IsolatedStorageFile IsolatedStorage = IsolatedStorageFile.GetUserStoreForAssembly();
@@ -62,7 +59,7 @@ namespace SteamDepotBrowser
                 Instance = new AccountSettingsStore();
             }
 
-            Instance.FileName = filename;
+            Instance.fileName = filename;
         }
 
         public static void Save()
@@ -72,7 +69,7 @@ namespace SteamDepotBrowser
 
             try
             {
-                using (var fs = IsolatedStorage.OpenFile(Instance.FileName, FileMode.Create, FileAccess.Write))
+                using (var fs = IsolatedStorage.OpenFile(Instance.fileName, FileMode.Create, FileAccess.Write))
                 using (DeflateStream ds = new DeflateStream(fs, CompressionMode.Compress))
                 {
                     ProtoBuf.Serializer.Serialize<AccountSettingsStore>(ds, Instance);

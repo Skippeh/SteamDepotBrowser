@@ -17,12 +17,13 @@ namespace SteamDepotBrowser
         {
             XamlDisplay.Init();
 
-            if (File.Exists("lastusername"))
-            {
-                Globals.AppState.LoginState.Username = File.ReadAllText("lastusername");
+            AccountSettingsStore.LoadFromFile("settings");
+            Globals.AppState.LoginState.Username = AccountSettingsStore.Instance.LastUsername;
+            Globals.UiDispatcher = Dispatcher;
+
+            if (!string.IsNullOrEmpty(Globals.AppState.LoginState.Username))
                 Globals.AppState.LoginState.RememberLogin = true;
-            }
-            
+
             base.OnStartup(e);
         }
 

@@ -60,17 +60,14 @@ namespace SteamDepotBrowser
 
         public static void WriteLoginKey(SteamUser.LoginKeyCallback data, string username)
         {
-            EnsureDirectoryExists();
-            var filePath = Path.Combine("sentry", $"login_{username}");
-            File.WriteAllText(filePath, data.LoginKey);
+            AccountSettingsStore.Instance.LoginKeys[username] = data.LoginKey;
+            AccountSettingsStore.Save();
         }
 
         public static string GetLoginKey(string username)
         {
-            var filePath = Path.Combine("sentry", $"login_{username}");
-
-            if (File.Exists(filePath))
-                return File.ReadAllText(filePath);
+            if (AccountSettingsStore.Instance.LoginKeys.TryGetValue(username, out var loginKey))
+                return loginKey;
 
             return null;
         }

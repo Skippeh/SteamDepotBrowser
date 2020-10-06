@@ -12,6 +12,8 @@
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Defaults.xaml" />
             </ResourceDictionary.MergedDictionaries>
             <converters:InvertBooleanConverter x:Key="InvertBooleanConverter" />
+            <converters:PercentageTextConverter x:Key="PercentageTextConverter" />
+            <converters:ByteToSizeTextConverter x:Key="ByteToSizeTextConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

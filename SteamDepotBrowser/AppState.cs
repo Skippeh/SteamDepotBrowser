@@ -16,13 +16,10 @@ namespace SteamDepotBrowser
         private DepotManifestInfo selectedManifest;
         private bool loadingManifests;
         private readonly HashSet<AppDepot> loadedManifests = new HashSet<AppDepot>();
-        private double downloadPercentageComplete;
-        private bool downloading;
-        private string downloadCurrentFile;
-        private bool cancellingDownload;
 
         public LoginState LoginState { get; } = new LoginState();
         public SteamState SteamState { get; } = new SteamState();
+        public DownloadState DownloadState { get; } = new DownloadState();
 
         public SteamApp SelectedApp
         {
@@ -64,46 +61,6 @@ namespace SteamDepotBrowser
             set
             {
                 loadingManifests = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public bool Downloading
-        {
-            get => downloading;
-            set
-            {
-                downloading = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public double DownloadPercentageComplete
-        {
-            get => downloadPercentageComplete;
-            set
-            {
-                downloadPercentageComplete = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public string DownloadCurrentFile
-        {
-            get => downloadCurrentFile;
-            set
-            {
-                downloadCurrentFile = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public bool CancellingDownload
-        {
-            get => cancellingDownload;
-            set
-            {
-                cancellingDownload = value;
                 OnPropertyChanged();
             }
         }
@@ -253,6 +210,98 @@ namespace SteamDepotBrowser
             set
             {
                 loginErrorText = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        private void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+    }
+
+    public class DownloadState : INotifyPropertyChanged
+    {
+        private double downloadPercentageComplete;
+        private bool downloading;
+        private string downloadCurrentFile;
+        private bool cancellingDownload;
+        private ulong totalBytes;
+        private ulong downloadedBytes;
+        private ulong bytesPerSecond;
+
+        public bool Downloading
+        {
+            get => downloading;
+            set
+            {
+                downloading = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public double DownloadPercentageComplete
+        {
+            get => downloadPercentageComplete;
+            set
+            {
+                downloadPercentageComplete = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public string DownloadCurrentFile
+        {
+            get => downloadCurrentFile;
+            set
+            {
+                downloadCurrentFile = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public bool CancellingDownload
+        {
+            get => cancellingDownload;
+            set
+            {
+                cancellingDownload = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public ulong DownloadedBytes
+        {
+            get => downloadedBytes;
+            set
+            {
+                downloadedBytes = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(RemainingBytes));
+            }
+        }
+
+        public ulong TotalBytes
+        {
+            get => totalBytes;
+            set
+            {
+                totalBytes = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(RemainingBytes));
+            }
+        }
+
+        public ulong RemainingBytes => TotalBytes - DownloadedBytes;
+
+        public ulong BytesPerSecond
+        {
+            get => bytesPerSecond;
+            set
+            {
+                bytesPerSecond = value;
                 OnPropertyChanged();
             }
         }

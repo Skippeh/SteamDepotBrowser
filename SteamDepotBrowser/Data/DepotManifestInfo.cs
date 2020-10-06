@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 
 namespace SteamDepotBrowser.Data
 {
@@ -6,6 +7,6 @@ namespace SteamDepotBrowser.Data
     {
         public ulong Id { get; set; }
         public DateTime Date { get; set; }
-        public string DisplayName => $"{Id} - {Date}";
+        public string DisplayName => Date.ToString(CultureInfo.CurrentCulture);
     }
 }

@@ -93,21 +93,36 @@
                 <Button
                     Grid.Column="0"
                     Click="OnDownloadClicked"
-                    IsEnabled="{Binding CancellingDownload, Converter={StaticResource InvertBooleanConverter}}"
+                    IsEnabled="{Binding DownloadState.CancellingDownload, Converter={StaticResource InvertBooleanConverter}}"
                     IsDefault="True"
                 >
-                    <TextBlock Text="{Binding Downloading, Converter={StaticResource DownloadTextConverter}}" />
+                    <TextBlock Text="{Binding DownloadState.Downloading, Converter={StaticResource DownloadTextConverter}}" />
                 </Button>
                 <StackPanel
                     Grid.Column="1"
                     Margin="15 0 0 0"
-                    Visibility="{Binding Downloading, Converter={StaticResource BooleanToVisibilityConverter}}"
+                    Visibility="{Binding DownloadState.Downloading, Converter={StaticResource BooleanToVisibilityConverter}}"
                 >
-                    <TextBlock HorizontalAlignment="Center" Text="{Binding DownloadCurrentFile}" />
+                    <TextBlock HorizontalAlignment="Center" Text="{Binding DownloadState.DownloadCurrentFile}" />
                     <ProgressBar
-                        Value="{Binding DownloadPercentageComplete}"
+                        Value="{Binding DownloadState.DownloadPercentageComplete}"
                         Maximum="100"
                     />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" HorizontalAlignment="Left">
+                            <Run Text="{Binding DownloadState.DownloadPercentageComplete, Converter={StaticResource PercentageTextConverter}}" />
+                            <Run>-</Run>
+                            <Run Text="{Binding DownloadState.BytesPerSecond, Converter={StaticResource ByteToSizeTextConverter}}" /><Run>/s</Run>
+                        </TextBlock>
+                        <TextBlock Grid.Column="1" HorizontalAlignment="Right">
+                            <Run Text="{Binding DownloadState.RemainingBytes, Converter={StaticResource ByteToSizeTextConverter}, Mode=OneWay}" />
+                            <Run>left</Run>
+                        </TextBlock>
+                    </Grid>
                 </StackPanel>
             </Grid>
         </Grid>

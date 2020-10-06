@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -178,11 +179,8 @@ namespace SteamDepotBrowser
                 configPath = DEFAULT_DOWNLOAD_DIR;
             }
 
-            if (!DepotConfigStore.Loaded)
-            {
-                Directory.CreateDirectory(Path.Combine(configPath, CONFIG_DIR));
-                DepotConfigStore.LoadFromFile(Path.Combine(configPath, CONFIG_DIR, "depot.config"));
-            }
+            Directory.CreateDirectory(Path.Combine(configPath, CONFIG_DIR));
+            DepotConfigStore.LoadFromFile(Path.Combine(configPath, CONFIG_DIR, "depot.config"));
 
             var depotIDs = new List<uint>() {depotId};
             KeyValue depots = await GetSteam3AppSectionAsync(appId, EAppInfoSection.Depots).ConfigureAwait(false);
@@ -211,6 +209,10 @@ namespace SteamDepotBrowser
             {
                 Console.WriteLine("App {0} was not completely downloaded.", appId);
                 throw;
+            }
+            finally
+            {
+                DepotConfigStore.Instance = null; // unload config store
             }
         }
 
@@ -403,22 +405,77 @@ namespace SteamDepotBrowser
 
                 ulong complete_download_size = 0;
                 ulong size_downloaded = 0;
+                var downloadChanges = new ConcurrentQueue<(DateTime, ulong)>();
+                object downloadChangesLock = new object();
 
                 void reportProgress(string currentFilePath)
                 {
+                    lock (downloadChangesLock)
+                    {
+                        while (downloadChanges.Count > 50) // Only average last 50 deltas
+                            downloadChanges.TryDequeue(out _);
+                    }
+
+                    ulong bytesPerSecond = 0;
+
+                    if (downloadChanges.Count > 0)
+                    {
+                        lock (downloadChangesLock)
+                        {
+                            TimeSpan timeSpan = downloadChanges.Last().Item1 - downloadChanges.First().Item1;
+                            ulong totalBytes = downloadChanges.Aggregate(0ul, (a, b) => a + b.Item2);
+                            double rate = totalBytes / timeSpan.TotalSeconds;
+
+                            if (double.IsNaN(rate) || double.IsInfinity(rate))
+                                rate = 0;
+
+                            bytesPerSecond = (ulong) rate;
+                        }
+                    }
+
                     Globals.UiDispatcher.Invoke(() =>
                     {
-                        Globals.AppState.DownloadPercentageComplete = ((double) size_downloaded / complete_download_size) * 100;
-                        Globals.AppState.DownloadCurrentFile = currentFilePath;
+                        Globals.AppState.DownloadState.DownloadPercentageComplete = ((double) size_downloaded / complete_download_size) * 100;
+                        Globals.AppState.DownloadState.DownloadCurrentFile = currentFilePath;
+                        Globals.AppState.DownloadState.DownloadedBytes = size_downloaded;
+                        Globals.AppState.DownloadState.BytesPerSecond = bytesPerSecond;
                     });
                 }
-                
-                string stagingDir = Path.Combine(depot.InstallDir, STAGING_DIR);
 
-                var filesAfterExclusions = newProtoManifest.Files;
+                string stagingDir = Path.Combine(depot.InstallDir, STAGING_DIR);
+                
+                // Delete files that are removed in new manifest
+                if (oldProtoManifest != null)
+                {
+                    var directoriesToCheck = new HashSet<string>(); // Directories to check if they're empty and delete
+                    
+                    foreach (ProtoManifest.FileData oldFile in oldProtoManifest.Files)
+                    {
+                        if (!newProtoManifest.Files.Any(newFile => newFile.FileName == oldFile.FileName))
+                        {
+                            Console.WriteLine($"Deleting file: {oldFile.FileName}");
+                            var fileFinalPath = Path.Combine(depot.InstallDir, oldFile.FileName);
+
+                            if (File.Exists(fileFinalPath))
+                            {
+                                File.Delete(fileFinalPath);
+                                directoriesToCheck.Add(Path.GetDirectoryName(fileFinalPath));
+                            }
+                        }
+                    }
+
+                    // Delete the now empty directories
+                    foreach (string directoryPath in directoriesToCheck)
+                    {
+                        if (Directory.GetDirectories(directoryPath).Length == 0 && Directory.GetFiles(directoryPath).Length == 0)
+                        {
+                            Directory.Delete(directoryPath);
+                        }
+                    }
+                }
 
                 // Pre-process
-                filesAfterExclusions.ForEach(file =>
+                newProtoManifest.Files.ForEach(file =>
                 {
                     var fileFinalPath = Path.Combine(depot.InstallDir, file.FileName);
                     var fileStagingPath = Path.Combine(stagingDir, file.FileName);
@@ -438,10 +495,15 @@ namespace SteamDepotBrowser
                     }
                 });
 
+                Globals.UiDispatcher.Invoke(() =>
+                {
+                    Globals.AppState.DownloadState.TotalBytes = complete_download_size;
+                });
+
                 cancellationToken.ThrowIfCancellationRequested();
 
                 var semaphore = new SemaphoreSlim(Config.MaxDownloads);
-                var files = filesAfterExclusions.Where(f => !f.Flags.HasFlag(EDepotFileFlag.Directory)).ToArray();
+                var files = newProtoManifest.Files.Where(f => !f.Flags.HasFlag(EDepotFileFlag.Directory)).ToArray();
                 var tasks = new Task[files.Length];
                 for (var i = 0; i < files.Length; i++)
                 {
@@ -553,7 +615,7 @@ namespace SteamDepotBrowser
                                 if (neededChunks.Count() == 0)
                                 {
                                     size_downloaded += file.TotalSize;
-                                    reportProgress(fileFinalPath);
+                                    reportProgress(file.FileName);
                                     
                                     if (fs != null)
                                         fs.Dispose();
@@ -561,8 +623,9 @@ namespace SteamDepotBrowser
                                 }
                                 else
                                 {
-                                    size_downloaded += (file.TotalSize - (ulong) neededChunks.Select(x => (long) x.UncompressedLength).Sum());
-                                    reportProgress(fileFinalPath);
+                                    ulong sizeDelta = (file.TotalSize - (ulong) neededChunks.Select(x => (long) x.UncompressedLength).Sum());
+                                    size_downloaded += sizeDelta;
+                                    reportProgress(file.FileName);
                                 }
                             }
 
@@ -644,11 +707,12 @@ namespace SteamDepotBrowser
                                 fs.Write(chunkData.Data, 0, chunkData.Data.Length);
 
                                 size_downloaded += chunk.UncompressedLength;
-                                reportProgress(fileFinalPath);
+                                downloadChanges.Enqueue((DateTime.Now, chunk.CompressedLength));
+                                reportProgress(file.FileName);
                             }
 
                             fs.Dispose();
-                            reportProgress(fileFinalPath);
+                            reportProgress(file.FileName);
                         }
                         finally
                         {

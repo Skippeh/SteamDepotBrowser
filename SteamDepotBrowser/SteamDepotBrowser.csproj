@@ -128,7 +128,9 @@
         <Compile Include="CDNClientPool.cs" />
         <Compile Include="ContentDownloader.cs" />
         <Compile Include="ContentDownloaderConfig.cs" />
+        <Compile Include="Converters\ByteToSizeTextConverter.cs" />
         <Compile Include="Converters\InvertBooleanConverter.cs" />
+        <Compile Include="Converters\PercentageTextConverter.cs" />
         <Compile Include="Data\AppDepot.cs" />
         <Compile Include="Data\DepotManifestInfo.cs" />
         <Compile Include="Data\SteamApp.cs" />

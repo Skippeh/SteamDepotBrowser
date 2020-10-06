@@ -49,7 +49,7 @@ namespace SteamDepotBrowser.Windows.Main
 
         private void OnDownloadClicked(object sender, RoutedEventArgs e)
         {
-            if (!Globals.AppState.Downloading)
+            if (!Globals.AppState.DownloadState.Downloading)
             {
                 var folderDialog = new VistaFolderBrowserDialog
                 {
@@ -66,7 +66,7 @@ namespace SteamDepotBrowser.Windows.Main
             }
             else
             {
-                Globals.AppState.CancellingDownload = true;
+                Globals.AppState.DownloadState.CancellingDownload = true;
                 downloadTaskCancellationSource.Cancel();
             }
         }
@@ -75,8 +75,8 @@ namespace SteamDepotBrowser.Windows.Main
         {
             Console.WriteLine("Starting download...");
             
-            Globals.AppState.Downloading = true;
-            Globals.AppState.DownloadPercentageComplete = 0;
+            Globals.AppState.DownloadState.Downloading = true;
+            Globals.AppState.DownloadState.DownloadPercentageComplete = 0;
 
             ContentDownloader.Config.InstallDirectory = targetFolder;
             ContentDownloader.Config.CellID = (int) Globals.SteamSession.Client.CellID;
@@ -95,9 +95,12 @@ namespace SteamDepotBrowser.Windows.Main
                 MessageBox.Show($"An error occured: {ex.Message}", "Download error");
             }
 
-            Globals.AppState.Downloading = false;
-            Globals.AppState.DownloadPercentageComplete = 0;
-            Globals.AppState.CancellingDownload = false;
+            Globals.AppState.DownloadState.Downloading = false;
+            Globals.AppState.DownloadState.DownloadPercentageComplete = 0;
+            Globals.AppState.DownloadState.CancellingDownload = false;
+            Globals.AppState.DownloadState.TotalBytes = 0;
+            Globals.AppState.DownloadState.DownloadedBytes = 0;
+            Globals.AppState.DownloadState.BytesPerSecond = 0;
             Console.WriteLine("Completed");
         }
     }

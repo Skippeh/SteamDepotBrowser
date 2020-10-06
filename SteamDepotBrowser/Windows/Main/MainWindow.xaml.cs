@@ -1,18 +1,22 @@
 ﻿using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using Ookii.Dialogs.Wpf;
 using SteamDepotBrowser.Data;
 
-namespace SteamDepotBrowser.Windows
+namespace SteamDepotBrowser.Windows.Main
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     public partial class MainWindow
     {
+        private Task downloadTask;
+        private CancellationTokenSource downloadTaskCancellationSource;
+        
         public MainWindow()
         {
             InitializeComponent();
@@ -45,17 +49,26 @@ namespace SteamDepotBrowser.Windows
 
         private void OnDownloadClicked(object sender, RoutedEventArgs e)
         {
-            var folderDialog = new VistaFolderBrowserDialog
+            if (!Globals.AppState.Downloading)
             {
-                ShowNewFolderButton = true,
-                Description = "Select target folder",
-                UseDescriptionForTitle = true
-            };
+                var folderDialog = new VistaFolderBrowserDialog
+                {
+                    ShowNewFolderButton = true,
+                    Description = "Select target folder",
+                    UseDescriptionForTitle = true
+                };
 
-            if (folderDialog.ShowDialog(this) != true)
-                return;
-            
-            Task.Run(() => StartDownload(folderDialog.SelectedPath));
+                if (folderDialog.ShowDialog(this) != true)
+                    return;
+
+                downloadTaskCancellationSource = new CancellationTokenSource();
+                downloadTask = Task.Run(() => StartDownload(folderDialog.SelectedPath));
+            }
+            else
+            {
+                Globals.AppState.CancellingDownload = true;
+                downloadTaskCancellationSource.Cancel();
+            }
         }
 
         private async Task StartDownload(string targetFolder)
@@ -70,7 +83,12 @@ namespace SteamDepotBrowser.Windows
 
             try
             {
-                await ContentDownloader.DownloadAppAsync(Globals.AppState.SelectedApp.Id, Globals.AppState.SelectedDepot.Id, Globals.AppState.SelectedManifest.Id);
+                await ContentDownloader.DownloadAppAsync(Globals.AppState.SelectedApp.Id, Globals.AppState.SelectedDepot.Id, Globals.AppState.SelectedManifest.Id,
+                    downloadTaskCancellationSource.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                // ignored
             }
             catch (Exception ex)
             {
@@ -79,6 +97,7 @@ namespace SteamDepotBrowser.Windows
 
             Globals.AppState.Downloading = false;
             Globals.AppState.DownloadPercentageComplete = 0;
+            Globals.AppState.CancellingDownload = false;
             Console.WriteLine("Completed");
         }
     }

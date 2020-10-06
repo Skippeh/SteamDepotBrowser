@@ -169,7 +169,7 @@ namespace SteamDepotBrowser
             }
         }
 
-        public static async Task DownloadAppAsync(uint appId, uint depotId, ulong manifestId)
+        public static async Task DownloadAppAsync(uint appId, uint depotId, ulong manifestId, CancellationToken cancellationToken)
         {
             // Load our configuration data containing the depots currently installed
             string configPath = Config.InstallDirectory;
@@ -197,11 +197,15 @@ namespace SteamDepotBrowser
                 {
                     infos.Add(info);
                 }
+
+                cancellationToken.ThrowIfCancellationRequested();
             }
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             try
             {
-                await DownloadSteam3Async(appId, infos).ConfigureAwait(false);
+                await DownloadSteam3Async(appId, infos, cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -249,7 +253,7 @@ namespace SteamDepotBrowser
             public ProtoManifest.ChunkData NewChunk { get; private set; }
         }
 
-        private static async Task DownloadSteam3Async(uint appId, List<DepotDownloadInfo> depots)
+        private static async Task DownloadSteam3Async(uint appId, List<DepotDownloadInfo> depots, CancellationToken cancellationToken)
         {
             ulong TotalBytesCompressed = 0;
             ulong TotalBytesUncompressed = 0;
@@ -434,6 +438,8 @@ namespace SteamDepotBrowser
                     }
                 });
 
+                cancellationToken.ThrowIfCancellationRequested();
+
                 var semaphore = new SemaphoreSlim(Config.MaxDownloads);
                 var files = filesAfterExclusions.Where(f => !f.Flags.HasFlag(EDepotFileFlag.Directory)).ToArray();
                 var tasks = new Task[files.Length];
@@ -448,6 +454,7 @@ namespace SteamDepotBrowser
                         {
                             await semaphore.WaitAsync().ConfigureAwait(false);
                             cts.Token.ThrowIfCancellationRequested();
+                            cancellationToken.ThrowIfCancellationRequested();
 
                             string fileFinalPath = Path.Combine(depot.InstallDir, file.FileName);
                             string fileStagingPath = Path.Combine(stagingDir, file.FileName);
@@ -626,6 +633,7 @@ namespace SteamDepotBrowser
 
                                 // Throw the cancellation exception if requested so that this task is marked failed
                                 cts.Token.ThrowIfCancellationRequested();
+                                cancellationToken.ThrowIfCancellationRequested();
 
                                 TotalBytesCompressed += chunk.CompressedLength;
                                 DepotBytesCompressed += chunk.CompressedLength;

@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Threading;
 using SteamDepotBrowser.Data;
 using SteamDepotBrowser.Windows;
+using SteamDepotBrowser.Windows.Login;
 using SteamKit2;
 
 namespace SteamDepotBrowser

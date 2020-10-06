@@ -1,10 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Windows;
 using SteamKit2;
 
-namespace SteamDepotBrowser.Windows
+namespace SteamDepotBrowser.Windows.Login
 {
     public partial class LoginWindow : Window
     {

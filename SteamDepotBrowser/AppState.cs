@@ -19,6 +19,7 @@ namespace SteamDepotBrowser
         private double downloadPercentageComplete;
         private bool downloading;
         private string downloadCurrentFile;
+        private bool cancellingDownload;
 
         public LoginState LoginState { get; } = new LoginState();
         public SteamState SteamState { get; } = new SteamState();
@@ -93,6 +94,16 @@ namespace SteamDepotBrowser
             set
             {
                 downloadCurrentFile = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public bool CancellingDownload
+        {
+            get => cancellingDownload;
+            set
+            {
+                cancellingDownload = value;
                 OnPropertyChanged();
             }
         }

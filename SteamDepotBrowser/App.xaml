@@ -4,7 +4,7 @@
              xmlns:local="clr-namespace:SteamDepotBrowser"
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:converters="clr-namespace:SteamDepotBrowser.Converters"
-             StartupUri="Windows/MainWindow.xaml">
+             StartupUri="Windows/Main/MainWindow.xaml">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>

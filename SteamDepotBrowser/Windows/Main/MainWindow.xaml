@@ -1,4 +1,4 @@
-﻿<Window x:Class="SteamDepotBrowser.Windows.MainWindow"
+﻿<Window x:Class="SteamDepotBrowser.Windows.Main.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -11,6 +11,8 @@
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         xmlns:componentModel="clr-namespace:System.ComponentModel;assembly=WindowsBase"
         xmlns:fa="http://schemas.fontawesome.io/icons/"
+        xmlns:converters="clr-namespace:SteamDepotBrowser.Converters"
+        xmlns:main="clr-namespace:SteamDepotBrowser.Windows.Main"
         TextElement.Foreground="{DynamicResource MaterialDesignBody}"
         Background="{DynamicResource MaterialDesignPaper}"
         TextElement.FontWeight="Medium"
@@ -27,6 +29,7 @@
         <Style x:Key="FirstHeaderText" TargetType="TextBlock" BasedOn="{StaticResource HeaderText}">
             <Setter Property="Margin" Value="0" />
         </Style>
+        <main:DownloadTextConverter x:Key="DownloadTextConverter" />
     </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
@@ -90,17 +93,22 @@
                 <Button
                     Grid.Column="0"
                     Click="OnDownloadClicked"
-                    IsEnabled="{Binding Downloading, Converter={StaticResource InvertBooleanConverter}}"
+                    IsEnabled="{Binding CancellingDownload, Converter={StaticResource InvertBooleanConverter}}"
+                    IsDefault="True"
                 >
-                    Download
+                    <TextBlock Text="{Binding Downloading, Converter={StaticResource DownloadTextConverter}}" />
                 </Button>
-                <ProgressBar
-                    Margin="15 0 0 0"
+                <StackPanel
                     Grid.Column="1"
-                    Value="{Binding DownloadPercentageComplete}"
-                    Maximum="100"
+                    Margin="15 0 0 0"
                     Visibility="{Binding Downloading, Converter={StaticResource BooleanToVisibilityConverter}}"
-                />
+                >
+                    <TextBlock HorizontalAlignment="Center" Text="{Binding DownloadCurrentFile}" />
+                    <ProgressBar
+                        Value="{Binding DownloadPercentageComplete}"
+                        Maximum="100"
+                    />
+                </StackPanel>
             </Grid>
         </Grid>
         <Grid

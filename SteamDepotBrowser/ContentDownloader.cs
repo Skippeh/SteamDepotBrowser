@@ -170,6 +170,17 @@ namespace SteamDepotBrowser
             }
         }
 
+        public static async Task<ulong> GetManifestSize(uint appId, uint depotId, ulong manifestId)
+        {
+            var depotInfo = await GetDepotInfoAsync(depotId, appId, manifestId, "Public").ConfigureAwait(false);
+
+            if (depotInfo == null)
+                return 0;
+
+            var manifestInfo = await DownloadManifest(appId, depotId, manifestId, depotInfo.DepotKey);
+            return manifestInfo?.TotalUncompressedSize ?? 0;
+        }
+
         public static async Task DownloadAppAsync(uint appId, uint depotId, ulong manifestId, CancellationToken cancellationToken)
         {
             // Load our configuration data containing the depots currently installed
@@ -348,46 +359,7 @@ namespace SteamDepotBrowser
                     {
                         Console.Write("Downloading depot manifest...");
 
-                        DepotManifest depotManifest = null;
-
-                        while (depotManifest == null)
-                        {
-                            Tuple<CDNClient.Server, string> connection = null;
-                            try
-                            {
-                                connection = await cdnPool.GetConnectionForDepot(appId, depot.Id, CancellationToken.None);
-
-                                depotManifest = await cdnPool.CDNClient.DownloadManifestAsync(depot.Id, depot.ManifestId,
-                                    connection.Item1, connection.Item2, depot.DepotKey).ConfigureAwait(false);
-
-                                cdnPool.ReturnConnection(connection);
-                            }
-                            catch (SteamKitWebRequestException e)
-                            {
-                                cdnPool.ReturnBrokenConnection(connection);
-
-                                if (e.StatusCode == HttpStatusCode.Unauthorized || e.StatusCode == HttpStatusCode.Forbidden)
-                                {
-                                    Console.WriteLine("Encountered 401 for depot manifest {0} {1}. Aborting.", depot.Id, depot.ManifestId);
-                                    break;
-                                }
-                                else
-                                {
-                                    Console.WriteLine("Encountered error downloading depot manifest {0} {1}: {2}", depot.Id, depot.ManifestId, e.StatusCode);
-                                }
-                            }
-                            catch (Exception e)
-                            {
-                                cdnPool.ReturnBrokenConnection(connection);
-                                Console.WriteLine("Encountered error downloading manifest for depot {0} {1}: {2}", depot.Id, depot.ManifestId, e.Message);
-                            }
-                        }
-
-                        if (depotManifest == null)
-                        {
-                            Console.WriteLine("\nUnable to download manifest {0} for depot {1}", depot.ManifestId, depot.Id);
-                            return;
-                        }
+                        DepotManifest depotManifest = await DownloadManifest(appId, depot.Id, depot.ManifestId, depot.DepotKey).ConfigureAwait(false);
 
                         byte[] checksum;
 
@@ -733,6 +705,51 @@ namespace SteamDepotBrowser
             }
 
             Console.WriteLine("Total downloaded: {0} bytes ({1} bytes uncompressed) from {2} depots", TotalBytesCompressed, TotalBytesUncompressed, depots.Count);
+        }
+
+        private static async Task<DepotManifest> DownloadManifest(uint appId, uint depotId, ulong manifestId, byte[] depotKey)
+        {
+            DepotManifest depotManifest = null;
+            while (depotManifest == null)
+            {
+                Tuple<CDNClient.Server, string> connection = null;
+                try
+                {
+                    connection = await cdnPool.GetConnectionForDepot(appId, depotId, CancellationToken.None);
+
+                    depotManifest = await cdnPool.CDNClient.DownloadManifestAsync(depotId, manifestId,
+                        connection.Item1, connection.Item2, depotKey).ConfigureAwait(false);
+
+                    cdnPool.ReturnConnection(connection);
+                }
+                catch (SteamKitWebRequestException e)
+                {
+                    cdnPool.ReturnBrokenConnection(connection);
+
+                    if (e.StatusCode == HttpStatusCode.Unauthorized || e.StatusCode == HttpStatusCode.Forbidden)
+                    {
+                        Console.WriteLine("Encountered 401 for depot manifest {0} {1}. Aborting.", depotId, manifestId);
+                        break;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Encountered error downloading depot manifest {0} {1}: {2}", depotId, manifestId, e.StatusCode);
+                    }
+                }
+                catch (Exception e)
+                {
+                    cdnPool.ReturnBrokenConnection(connection);
+                    Console.WriteLine("Encountered error downloading manifest for depot {0} {1}: {2}", depotId, manifestId, e.Message);
+                }
+            }
+
+            if (depotManifest == null)
+            {
+                Console.WriteLine("\nUnable to download manifest {0} for depot {1}", manifestId, depotId);
+                return null;
+            }
+
+            return depotManifest;
         }
     }
 }

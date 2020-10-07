@@ -14,7 +14,6 @@ namespace SteamDepotBrowser.Windows.Main
     /// </summary>
     public partial class MainWindow
     {
-        private Task downloadTask;
         private CancellationTokenSource downloadTaskCancellationSource;
         
         public MainWindow()
@@ -64,7 +63,7 @@ namespace SteamDepotBrowser.Windows.Main
                     return;
 
                 downloadTaskCancellationSource = new CancellationTokenSource();
-                downloadTask = Task.Run(() => StartDownload(folderDialog.SelectedPath));
+                Task.Run(() => StartDownload(folderDialog.SelectedPath));
             }
             else
             {

@@ -8,6 +8,9 @@ namespace SteamDepotBrowser.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
+            if (value == null)
+                return "unknown";
+            
             ulong numericValue = System.Convert.ToUInt64(value);
             
             string size;

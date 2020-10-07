@@ -48,7 +48,7 @@
                 <TextBlock Style="{StaticResource FirstHeaderText}">Application</TextBlock>
                 <ComboBox
                     ItemsSource="{Binding SteamState.Apps}"
-                    SelectedItem="{Binding SelectedApp}"
+                    SelectedItem="{Binding SelectedApp, Delay=500}"
                     DisplayMemberPath="Name"
                 >
                     <ComboBox.ItemsPanel>
@@ -60,11 +60,15 @@
                 <TextBlock Style="{StaticResource HeaderText}">Depot</TextBlock>
                 <ComboBox
                     ItemsSource="{Binding SelectedApp.Depots}"
-                    SelectedItem="{Binding SelectedDepot}"
+                    SelectedItem="{Binding SelectedDepot, Delay=500}"
                     DisplayMemberPath="Name"
                 />
                 <TextBlock Style="{StaticResource HeaderText}">Manifest</TextBlock>
                 <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
@@ -72,7 +76,7 @@
                     <ComboBox
                         IsEnabled="{Binding LoadingManifests, Converter={StaticResource InvertBooleanConverter}}"
                         ItemsSource="{Binding SelectedDepot.Manifests}"
-                        SelectedItem="{Binding SelectedManifest}"
+                        SelectedItem="{Binding SelectedManifest, Delay=500}"
                         DisplayMemberPath="DisplayName"
                     >
                         <ComboBox.ItemsPanel>
@@ -82,6 +86,7 @@
                         </ComboBox.ItemsPanel>
                     </ComboBox>
                     <fa:ImageAwesome
+                        Grid.Row="0"
                         Grid.Column="1"
                         Icon="Refresh"
                         Spin="True"
@@ -91,6 +96,13 @@
                         Visibility="{Binding LoadingManifests,
                             Converter={StaticResource BooleanToVisibilityConverter}}"
                     />
+                    <TextBlock Grid.Row="1" Grid.Column="0" Visibility="{Binding LoadingManifestSize, Converter={StaticResource InverseBoolToVisConverter}}">
+                        <Run>Install size:</Run>
+                        <Run Text="{Binding ManifestSize, Converter={StaticResource ByteToSizeTextConverter}}" />
+                    </TextBlock>
+                    <TextBlock Grid.Row="1" Grid.Column="0" Visibility="{Binding LoadingManifestSize, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        Install size: ...
+                    </TextBlock>
                 </Grid>
             </StackPanel>
             <ScrollViewer x:Name="OutputScrollViewer" VerticalScrollBarVisibility="Auto" Grid.Row="1" Margin="0 15 0 0">

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -16,6 +17,8 @@ namespace SteamDepotBrowser
         private DepotManifestInfo selectedManifest;
         private bool loadingManifests;
         private readonly HashSet<AppDepot> loadedManifests = new HashSet<AppDepot>();
+        private ulong? manifestSize;
+        private bool loadingManifestSize;
 
         public LoginState LoginState { get; } = new LoginState();
         public SteamState SteamState { get; } = new SteamState();
@@ -52,6 +55,21 @@ namespace SteamDepotBrowser
             {
                 selectedManifest = value;
                 OnPropertyChanged();
+
+                if (value == null)
+                    ManifestSize = null;
+                else
+                    Task.Run(LoadManifestSizeIfNeeded);
+            }
+        }
+
+        public ulong? ManifestSize
+        {
+            get => manifestSize;
+            set
+            {
+                manifestSize = value;
+                OnPropertyChanged();
             }
         }
 
@@ -61,6 +79,16 @@ namespace SteamDepotBrowser
             set
             {
                 loadingManifests = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public bool LoadingManifestSize
+        {
+            get => loadingManifestSize;
+            set
+            {
+                loadingManifestSize = value;
                 OnPropertyChanged();
             }
         }
@@ -92,6 +120,30 @@ namespace SteamDepotBrowser
             LoadingManifests = false;
             SelectedManifest = SelectedDepot.Manifests.FirstOrDefault();
             OnPropertyChanged(nameof(SelectedDepot)); // Triggers a refresh on things that bind SelectedDepot and its members
+        }
+
+        private async Task LoadManifestSizeIfNeeded()
+        {
+            if (SelectedApp == null || SelectedDepot == null || selectedManifest == null)
+                return;
+
+            ManifestSize = null;
+            LoadingManifestSize = true;
+
+            try
+            {
+                var newManifestSize = await ContentDownloader.GetManifestSize(SelectedApp.Id, selectedDepot.Id, selectedManifest.Id);
+                ManifestSize = newManifestSize;
+            }
+            catch
+            {
+                ManifestSize = null;
+                Console.WriteLine("Failed to get manifest size");
+            }
+            finally
+            {
+                LoadingManifestSize = false;
+            }
         }
     }
 

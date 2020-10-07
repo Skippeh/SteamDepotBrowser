@@ -25,6 +25,8 @@ namespace SteamDepotBrowser.Windows.Main
 
             Loaded += (sender, args) =>
             {
+                ConsoleOutput.ScrollContainer = OutputScrollViewer;
+                
                 Task.Run(async () =>
                 {
                     if (!await Globals.SteamSession.LogOnWithUI(this))

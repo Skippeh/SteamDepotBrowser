@@ -128,6 +128,9 @@
         <Compile Include="CDNClientPool.cs" />
         <Compile Include="ContentDownloader.cs" />
         <Compile Include="ContentDownloaderConfig.cs" />
+        <Compile Include="Controls\ConsoleOutput.xaml.cs">
+          <DependentUpon>ConsoleOutput.xaml</DependentUpon>
+        </Compile>
         <Compile Include="Converters\ByteToSizeTextConverter.cs" />
         <Compile Include="Converters\InvertBooleanConverter.cs" />
         <Compile Include="Converters\PercentageTextConverter.cs" />
@@ -155,6 +158,7 @@
           <DependentUpon>MainWindow.xaml</DependentUpon>
           <SubType>Code</SubType>
         </Compile>
+        <Page Include="Controls\ConsoleOutput.xaml" />
         <Page Include="Windows\Login\LoginWindow.xaml" />
         <Page Include="Windows\Main\MainWindow.xaml">
           <Generator>MSBuild:Compile</Generator>

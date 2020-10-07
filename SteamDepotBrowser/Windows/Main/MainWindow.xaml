@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:SteamDepotBrowser"
         mc:Ignorable="d"
-        Title="MainWindow" Height="350" Width="525"
+        Title="MainWindow" Height="400" Width="525"
         WindowStartupLocation="CenterScreen"
 
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
@@ -13,6 +13,7 @@
         xmlns:fa="http://schemas.fontawesome.io/icons/"
         xmlns:converters="clr-namespace:SteamDepotBrowser.Converters"
         xmlns:main="clr-namespace:SteamDepotBrowser.Windows.Main"
+        xmlns:controls="clr-namespace:SteamDepotBrowser.Controls"
         TextElement.Foreground="{DynamicResource MaterialDesignBody}"
         Background="{DynamicResource MaterialDesignPaper}"
         TextElement.FontWeight="Medium"
@@ -37,6 +38,7 @@
         </Grid.ColumnDefinitions>
         <Grid Margin="15">
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
@@ -91,7 +93,10 @@
                     />
                 </Grid>
             </StackPanel>
-            <Grid Grid.Row="1">
+            <ScrollViewer x:Name="OutputScrollViewer" VerticalScrollBarVisibility="Auto" Grid.Row="1" Margin="0 15 0 0">
+                <controls:ConsoleOutput x:Name="ConsoleOutput" />
+            </ScrollViewer>
+            <Grid Grid.Row="2" Margin="0 15 0 0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />

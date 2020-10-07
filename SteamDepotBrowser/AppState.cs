@@ -82,8 +82,13 @@ namespace SteamDepotBrowser
 
             LoadingManifests = true;
             List<DepotManifestInfo> manifests = await SteamDBManager.GetManifests(SelectedDepot.Id);
-            SelectedDepot.Manifests = manifests;
-            loadedManifests.Add(SelectedDepot);
+
+            if (manifests != null)
+            {
+                loadedManifests.Add(SelectedDepot);
+                SelectedDepot.Manifests = manifests;
+            }
+            
             LoadingManifests = false;
             SelectedManifest = SelectedDepot.Manifests.FirstOrDefault();
             OnPropertyChanged(nameof(SelectedDepot)); // Triggers a refresh on things that bind SelectedDepot and its members

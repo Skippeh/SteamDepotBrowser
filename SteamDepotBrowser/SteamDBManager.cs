@@ -20,9 +20,16 @@ namespace SteamDepotBrowser
                 string html = await BaseUrl
                     .AppendPathSegments("depot", depotId, "manifests")
                     .WithHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36")
-                    .GetStringAsync();
+                    .GetStringAsync()
+                    .ConfigureAwait(false);
 
-                var document = await HtmlManager.ParseDocument(html);
+                if (html == null)
+                {
+                    Console.WriteLine("Error: Could not get manifest history from SteamDB");
+                    return null;
+                }
+
+                var document = await HtmlManager.ParseDocument(html).ConfigureAwait(false);
                 var manifestElements =
                     document.QuerySelector("#manifests")
                         .QuerySelector("table")

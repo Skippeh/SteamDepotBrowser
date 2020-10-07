@@ -72,7 +72,13 @@
                         ItemsSource="{Binding SelectedDepot.Manifests}"
                         SelectedItem="{Binding SelectedManifest}"
                         DisplayMemberPath="DisplayName"
-                    />
+                    >
+                        <ComboBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <VirtualizingStackPanel />
+                            </ItemsPanelTemplate>
+                        </ComboBox.ItemsPanel>
+                    </ComboBox>
                     <fa:ImageAwesome
                         Grid.Column="1"
                         Icon="Refresh"

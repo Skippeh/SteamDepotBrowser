@@ -170,7 +170,7 @@ namespace SteamDepotBrowser
             }
         }
 
-        public static async Task<ulong> GetManifestSize(uint appId, uint depotId, ulong manifestId)
+        public static async Task<ulong?> GetManifestSize(uint appId, uint depotId, ulong manifestId)
         {
             var depotInfo = await GetDepotInfoAsync(depotId, appId, manifestId, "Public").ConfigureAwait(false);
 
@@ -178,7 +178,7 @@ namespace SteamDepotBrowser
                 return 0;
 
             var manifestInfo = await DownloadManifest(appId, depotId, manifestId, depotInfo.DepotKey);
-            return manifestInfo?.TotalUncompressedSize ?? 0;
+            return manifestInfo?.TotalUncompressedSize;
         }
 
         public static async Task DownloadAppAsync(uint appId, uint depotId, ulong manifestId, CancellationToken cancellationToken)

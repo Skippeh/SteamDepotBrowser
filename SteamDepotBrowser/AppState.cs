@@ -132,7 +132,7 @@ namespace SteamDepotBrowser
 
             try
             {
-                var newManifestSize = await ContentDownloader.GetManifestSize(SelectedApp.Id, selectedDepot.Id, selectedManifest.Id);
+                ulong? newManifestSize = await ContentDownloader.GetManifestSize(SelectedApp.Id, selectedDepot.Id, selectedManifest.Id);
                 ManifestSize = newManifestSize;
             }
             catch

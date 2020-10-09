@@ -78,7 +78,7 @@ namespace SteamDepotBrowser.Windows.Login
                 ShouldRememberPassword = State.RememberLogin,
                 SentryFileHash = sentryHash,
                 LoginKey = State.RememberLogin ? loginKey : null,
-                LoginID = 1000 // Can be any integer, as long as it's unique per application
+                LoginID = 1891 // Can be any integer, as long as it's unique per application
             };
 
             user.LogOn(logonDetails);

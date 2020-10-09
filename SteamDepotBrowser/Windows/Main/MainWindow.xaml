@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:SteamDepotBrowser"
         mc:Ignorable="d"
-        Title="MainWindow" Height="400" Width="525"
+        Title="Steam Depot Browser" Height="400" Width="525"
         WindowStartupLocation="CenterScreen"
 
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"

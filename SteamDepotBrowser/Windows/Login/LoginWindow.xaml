@@ -35,7 +35,7 @@
             <TextBlock>Steam auth code</TextBlock>
             <TextBox Text="{Binding LoginState.AuthCode}" CharacterCasing="Upper" Width="100" HorizontalAlignment="Left" />
         </StackPanel>
-        <Button Click="OnLoginClicked">
+        <Button Click="OnLoginClicked" IsDefault="True">
             <WrapPanel>
                 <materialDesign:PackIcon Kind="Login" />
                 <TextBlock>Log in</TextBlock>

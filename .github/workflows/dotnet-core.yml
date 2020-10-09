@@ -1,0 +1,35 @@
+name: .NET Build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.x
+    - name: Install dependencies
+      run: dotnet restore
+    - name: Build self contained
+      run: dotnet publish SteamDepotBrowser/SteamDepotBrowser.csproj -o publish/self-contained/ -f net48 -r win-x64 -c Release --self-contained
+    - name: Build .net 4.8 dependant single executable
+      run: dotnet publish SteamDepotBrowser/SteamDepotBrowser.csproj -o publish/net48/ -f net48 -r win-x64 -c Release --no-self-contained -p:PublishSingleFile=true
+    - name: Upload self contained artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: SteamDepotBrowser-selfcontained
+        path: publish/self-contained/
+    - name: Upload net core artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: SteamDepotBrowser-net48
+        path: publish/net48/

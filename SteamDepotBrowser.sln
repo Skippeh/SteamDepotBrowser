@@ -1,16 +1,34 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamDepotBrowser", "SteamDepotBrowser\SteamDepotBrowser.csproj", "{4A92AEB2-6A79-4476-9A2D-B2C85438F347}"
+# Visual Studio 15
+VisualStudioVersion = 15.0.26124.0
+MinimumVisualStudioVersion = 15.0.26124.0
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamDepotBrowser", "SteamDepotBrowser\SteamDepotBrowser.csproj", "{D7AFEBAA-4DBC-4860-896A-0E40BB998BBD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
 		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{4A92AEB2-6A79-4476-9A2D-B2C85438F347}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4A92AEB2-6A79-4476-9A2D-B2C85438F347}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4A92AEB2-6A79-4476-9A2D-B2C85438F347}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4A92AEB2-6A79-4476-9A2D-B2C85438F347}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D7AFEBAA-4DBC-4860-896A-0E40BB998BBD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D7AFEBAA-4DBC-4860-896A-0E40BB998BBD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D7AFEBAA-4DBC-4860-896A-0E40BB998BBD}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D7AFEBAA-4DBC-4860-896A-0E40BB998BBD}.Debug|x64.Build.0 = Debug|Any CPU
+		{D7AFEBAA-4DBC-4860-896A-0E40BB998BBD}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D7AFEBAA-4DBC-4860-896A-0E40BB998BBD}.Debug|x86.Build.0 = Debug|Any CPU
+		{D7AFEBAA-4DBC-4860-896A-0E40BB998BBD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D7AFEBAA-4DBC-4860-896A-0E40BB998BBD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D7AFEBAA-4DBC-4860-896A-0E40BB998BBD}.Release|x64.ActiveCfg = Release|Any CPU
+		{D7AFEBAA-4DBC-4860-896A-0E40BB998BBD}.Release|x64.Build.0 = Release|Any CPU
+		{D7AFEBAA-4DBC-4860-896A-0E40BB998BBD}.Release|x86.ActiveCfg = Release|Any CPU
+		{D7AFEBAA-4DBC-4860-896A-0E40BB998BBD}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

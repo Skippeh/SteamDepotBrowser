@@ -21,8 +21,8 @@ jobs:
       run: dotnet restore
     - name: Build self contained
       run: dotnet publish SteamDepotBrowser/SteamDepotBrowser.csproj -o publish/self-contained/ -f net48 -r win-x64 -c Release --self-contained
-    - name: Build .net 4.8 dependant single executable
-      run: dotnet publish SteamDepotBrowser/SteamDepotBrowser.csproj -o publish/net48/ -f net48 -r win-x64 -c Release --no-self-contained -p:PublishSingleFile=true
+    - name: Build .net 4.8 dependant
+      run: dotnet publish SteamDepotBrowser/SteamDepotBrowser.csproj -o publish/net48/ -f net48 -r win-x64 -c Release --no-self-contained
     - name: Upload self contained artifact
       uses: actions/upload-artifact@v2
       with:
